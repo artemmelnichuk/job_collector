@@ -1,0 +1,39 @@
+collection:
+  default_source: "all"
+  default_limit: 50
+  max_pages: 10
+  max_age_days: null
+  location: "Worldwide"
+  geography:
+    - "Remote"
+    - "Europe"
+    - "France"
+    - "European Union"
+
+request:
+  timeout_seconds: 60
+  retry_attempts: 2
+  delay_min_seconds: 1.0
+  delay_max_seconds: 3.0
+
+storage:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  logs_dir: "logs"
+  processed_filename: "crypto_jobs_clean_v1.xlsx"
+
+browser:
+  profile_dir: ".browser_profile"
+  headless: false
+  locale: "en-US"
+  manual_login_timeout_seconds: 180
+
+sources:
+  wttj:
+    # Публичная тематическая страница, использовавшаяся рабочим legacy-collector.
+    search_url_template: "https://www.welcometothejungle.com/fr/pages/emploi-data-analyst?query={query}"
+    max_pages: 15
+  work_ua:
+    max_pages: 5
+  robota_ua:
+    max_pages: 5

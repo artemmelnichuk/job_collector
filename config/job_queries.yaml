@@ -1,0 +1,284 @@
+categories:
+  data:
+    - "Data Analyst"
+    - "Data Analytics"
+    - "Junior Data Analyst"
+    - "Product Analyst"
+    - "Product Analytics"
+    - "Business Analyst"
+    - "BI Analyst"
+    - "Business Intelligence Analyst"
+    - "Analytics Engineer"
+    - "Strategy Analyst"
+    - "Research Analyst"
+
+  web_analytics:
+    - "Web Analyst"
+    - "Web Analytics Analyst"
+    - "Digital Analytics Analyst"
+    - "Digital Analyst"
+
+  crypto:
+    - "Crypto Data Analyst"
+    - "Blockchain Analyst"
+    - "Blockchain Data Analyst"
+    - "Crypto Analyst"
+    - "Web3 Analyst"
+    - "On-chain Analyst"
+    - "Onchain Analyst"
+    - "DeFi Analyst"
+    - "Crypto Research Analyst"
+
+  trading:
+    - "Trading Analyst"
+    - "Trading Operations Analyst"
+    - "Trading Operations"
+    - "Trading Data Analyst"
+    - "Trading Performance Analyst"
+    - "Execution Analyst"
+    - "Trading Support Analyst"
+    - "Market Analyst"
+
+  market_data:
+    - "Market Data Analyst"
+    - "Market Data Specialist"
+
+  risk:
+    - "Risk Analyst"
+    - "Trading Risk Analyst"
+    - "Market Risk Analyst"
+    - "Crypto Risk Analyst"
+
+  fraud:
+    - "Fraud Analyst"
+    - "Fraud Data Analyst"
+    - "Financial Crime Analyst"
+    - "AML Analyst"
+
+  quant:
+    - "Quant Analyst"
+    - "Quantitative Analyst"
+    - "Junior Quant"
+    - "Quant Researcher"
+    - "Quantitative Research Analyst"
+    - "Research Analyst"
+    - "Quant Research Assistant"
+
+# Djinni.co (Ukraine's largest IT job board) primary_keyword filter values.
+# NOT the same vocabulary as the English "queries" above — Djinni's own
+# category taxonomy, in English UI labels even though postings are in
+# Ukrainian/Russian. Only add a value here after verifying it actually
+# filters results at https://djinni.co/jobs/?primary_keyword=<value> — an
+# unrecognized value silently falls back to Djinni's unfiltered "all jobs"
+# feed instead of erroring (see collectors/djinni.py docstring).
+djinni_categories:
+  data:
+    - "Data Analytics"
+    # Added 2026-09-08: both manually verified at
+    # djinni.co/jobs/?primary_keyword=<value> to actually filter (page title
+    # reads "Jobs <Category>", not the generic "Jobs at Djinni" fallback that
+    # signals an unrecognized keyword), and both surfaced relevant results
+    # (Business Analyst/Data Analyst roles, several at crypto/iGaming/fintech
+    # companies). Tried and rejected: "Business Analytics" and "Product
+    # Analytics" both silently fell back to the unfiltered all-jobs feed —
+    # not valid Djinni category labels, despite reading naturally. "Data
+    # Science" is valid but skewed toward ML/data-architecture roles (Data
+    # Architect, Computer Vision Engineer) outside his profile — not added.
+    - "Data Analyst"
+    - "Business Analyst"
+
+# Free-text Ukrainian-language search phrases for Work.ua and Robota.ua
+# (both general, not IT-only, Ukrainian job boards — see collectors/work_ua.py
+# and collectors/robota_ua.py docstrings for why they were added). NOT the
+# same vocabulary as djinni_categories (Djinni uses English category labels
+# as a categorical filter) or the shared English "queries" above (postings
+# and search terms on these two sites are Ukrainian/Russian).
+ukrainian_categories:
+  data:
+    - "аналітик даних"
+    - "бізнес аналітик"
+    - "продуктовий аналітик"
+    - "фінансовий аналітик"
+    - "аналітик"
+
+context_terms:
+  - "crypto"
+  - "cryptocurrency"
+  - "blockchain"
+  - "web3"
+  - "trading"
+  - "exchange"
+  - "market data"
+  - "digital assets"
+  - "defi"
+  - "on-chain"
+
+# Categories exempt from the context_terms relevance check (LinkedIn/WTTJ only —
+# Company Careers is already scoped to crypto/trading companies in companies.yaml).
+# General analytics/web-analytics roles are wanted even without crypto vocabulary.
+context_exempt_categories:
+  - "data"
+  - "web_analytics"
+
+# Drops postings whose seniority/requirements look out of reach right now
+# (junior/mid candidate, ~9-year employment gap, self-taught Python).
+exclusion:
+  title_markers:
+    - "senior"
+    - "sr."
+    - "lead"
+    - "head of"
+    - "director"
+    - "principal"
+    - "staff"
+    - "manager"
+  text_markers:
+    - "phd"
+    - "ph.d"
+    - "advanced python"
+    - "expert-level python"
+    - "expert python"
+    - "strong python skills"
+    # Adjacent finance-specialist functions found in real "не подходит" reviews:
+    # these use generic "Analyst" titles but require domain experience he does
+    # not have (credit risk, sales/BD, audit/compliance), unrelated to seniority.
+    - "counterparty underwriting"
+    - "prime brokerage"
+    - "credit risk management experience"
+    - "business development experience"
+    - "compliance testing"
+    # Added 2026-09-08 from skills_gap_report.py's domain_expertise_missing /
+    # seniority_too_high buckets: payments-fraud and AML/compliance-certified
+    # roles ask for domain depth and credentials (ACAMS/ACFCS) he doesn't have.
+    - "payments fraud prevention"
+    - "edd/aml"
+    - "acams"
+    - "acfcs"
+  # Lowered from 5 to 3 (2026-09-08): skills_gap_report.py showed
+  # experience_years_short at 36% of all rejections, and most of those
+  # postings asked for 3-4 years, not 5+ — the old threshold missed them.
+  min_years_experience: 3
+  # Explicit French-requirement phrasing, checked as-is regardless of overall language.
+  # Includes "H/F"/"F/H"/"X/F/M" — the standard French gender-neutral job-title
+  # marker, which on its own is a near-certain signal the posting is French.
+  french_phrases:
+    - "français courant"
+    - "maîtrise du français"
+    - "bilingue français"
+    - "langue française"
+    - "french speaking required"
+    - "fluent in french"
+    - "french mother tongue"
+    - "native french"
+    - "h/f"
+    - "f/h"
+    - "x/f/m"
+    - "h/f/x"
+  # Common French function words rarely found in English postings — if enough of
+  # these appear, the posting itself is written in French (even with no explicit
+  # "French required" line), which he can't work in.
+  french_word_markers:
+    - "vous"
+    - "vos"
+    - "notre"
+    - "nos"
+    - "votre"
+    - "poste"
+    - "candidat"
+    - "compétences"
+    - "équipe"
+    - "société"
+    - "rejoindre"
+    - "recherchons"
+    - "expérience"
+    - "mission"
+    - "missions"
+    - "les"
+    - "des"
+    - "dans"
+    - "avec"
+    - "être"
+  french_word_marker_threshold: 3
+  # German equivalent of the french_phrases/french_word_markers pair above —
+  # same rationale (no German), added 2026-09-08. "m/w/d" (and variants) is
+  # German's standard gender-neutral job-title marker, equivalent to French
+  # "h/f", and on its own is a near-certain signal the posting is German.
+  german_phrases:
+    - "verhandlungssicheres deutsch"
+    - "fließend deutsch"
+    - "deutschkenntnisse"
+    - "deutsch als muttersprache"
+    - "muttersprache deutsch"
+    - "german speaking required"
+    - "fluent in german"
+    - "german mother tongue"
+    - "native german"
+    - "m/w/d"
+    - "w/m/d"
+    - "d/m/w"
+    - "m/w/x"
+  # Common German function/business words rarely found in English postings —
+  # if enough of these appear, the posting itself is written in German (even
+  # with no explicit "German required" line). Deliberately avoids short/
+  # ambiguous tokens that double as English words (e.g. "der", "die", "das",
+  # "sie") to keep false positives down.
+  german_word_markers:
+    - "und"
+    - "wir"
+    - "unsere"
+    - "ihre"
+    - "mitarbeiter"
+    - "unternehmen"
+    - "erfahrung"
+    - "kenntnisse"
+    - "aufgaben"
+    - "bewerbung"
+    - "kollegen"
+    - "gemeinsam"
+    - "berufserfahrung"
+    - "abteilung"
+  german_word_marker_threshold: 3
+  # Was: drop Hybrid/On-site everywhere (remote-only). Relaxed 2026-09-06 —
+  # candidate is now open to office/hybrid roles and relocation (staying in
+  # Nice without French isn't viable long-term), so work format is no longer
+  # an auto-reject signal — it's still recorded (work_mode) for manual_review
+  # to weigh alongside everything else, just not filtered out before a human
+  # sees it. Left empty rather than deleted so the mechanism stays available
+  # if the calculus changes again.
+  disallowed_work_formats: []
+  # Open to relocation in general, but not to these specific countries for a
+  # Hybrid/On-site (physical presence) posting — a Remote posting nominally
+  # based here is unaffected. Seeded 2026-09-07 from real manual_review
+  # rejections: Poland (Novoplex — country wasn't "Poland" in this dataset,
+  # caught via the location_fit field instead, so not listed here), India
+  # (Coinbase, Hyderabad — Hybrid) and Ukraine (BRDO, Kyiv — Hybrid;
+  # relocating to Ukraine specifically is off the table even though most
+  # Djinni postings are Ukraine-based and otherwise get the benefit of the
+  # doubt on skill/experience gaps).
+  disallowed_onsite_countries:
+    - "Ukraine"
+    - "India"
+  # Scam/lead-funnel postings dressed up as trading/analyst roles, seeded
+  # 2026-09-08 from skills_gap_report.py's low_quality_listing rejection
+  # bucket ("no experience needed", "learn to trade from scratch" style
+  # postings with vague company descriptions) — real analytical roles never
+  # use this phrasing.
+  low_quality_phrases:
+    - "no experience needed"
+    - "no experience required"
+    - "no prior experience"
+    - "learn to trade"
+    - "trading from scratch"
+    - "learning from scratch"
+    - "mastered with a mentor"
+    - "become a trader"
+    - "free trading course"
+    - "financial freedom"
+    - "novice specialist"
+    # Real-world confirmed sample (Empire Assets, RemoteOK, 2026-09-08): a
+    # "junior crypto trader" role dressed as analytics, no track record
+    # required, curiosity over experience, ~20h/week "convenient to combine
+    # with study" — matches the "Похоже на сомнительную/скам-схему трейдинга"
+    # manual_review rejection this bucket is meant to catch automatically.
+    - "curiosity is more important than"
+    - "convenient to combine with study"

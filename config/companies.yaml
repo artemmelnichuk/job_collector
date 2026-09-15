@@ -1,0 +1,146 @@
+priority_companies:
+  exchanges:
+    - "Binance"
+    - "Coinbase"
+    - "Kraken"
+    - "OKX"
+    - "Bybit"
+    - "Bitget"
+    - "Crypto.com"
+    - "Deribit"
+
+  trading:
+    - "Wintermute"
+    - "GSR"
+    - "Flow Traders"
+    - "FalconX"
+    - "Cumberland"
+
+  data_and_analytics:
+    - "Kaiko"
+    - "Coin Metrics"
+    - "Nansen"
+    - "Chainalysis"
+
+  # Added 2026-09-09 from mining a curated external list of 599 international
+  # companies "with Russian-speaking roots" (see PROJECT_HANDOFF_RU.md and
+  # data/reference/notion_600_companies_greenhouse_lever.md for the source,
+  # full candidate list, and methodology). Broader than pure crypto/trading —
+  # matches the project's scope having already widened past crypto-only.
+  general_fintech_and_tech:
+    - "airSlate"
+    - "AppFollow"
+    - "CoinsPaid"
+    - "Collectly"
+    - "MoonPay"
+    - "Outschool"
+    - "Stackadapt"
+    - "Truv"
+    - "Xometry"
+    - "Zerion"
+
+additional_companies: []
+
+# Priority companies checked 2026-09-05 with no confirmed public Greenhouse/
+# Lever board (don't re-guess slugs without new evidence):
+#   - Kraken: found on Lever (slug "kraken") but the board returns 0 jobs —
+#     left out until it actually has postings.
+#   - Bitget, Crypto.com, Deribit: no Greenhouse/Lever board found under any
+#     tried slug; likely a different/custom ATS.
+#   - Chainalysis: careers run on Ashby (jobs.ashbyhq.com), not supported by
+#     this collector (Greenhouse/Lever only).
+#   - Coin Metrics: coinmetrics.io/careers redirects to talos.com/working —
+#     unclear company/ATS relationship, needs manual investigation before
+#     adding.
+#
+# Candidates checked 2026-09-09 (from the same Notion-list mining pass as
+# general_fintech_and_tech above) with NO confirmed working board — don't
+# re-add without new evidence:
+#   - Prodly: real Greenhouse board (slug "prodlyjobs"), 200 OK, but returns
+#     0 jobs — same Kraken pattern, revisit if it starts posting.
+#   - CentML, Lightspeed (ex-Ecwid), Perplexity, Rarible, Sanas, Simple, Termius:
+#     the Career-page link in the source list points at a greenhouse.io/
+#     lever.co URL, but the API call 404s under that exact slug — likely
+#     migrated ATS, a board-token that differs from the URL path (a known
+#     Greenhouse quirk on job-boards.greenhouse.io), or the listing is stale.
+#     Not worth guessing alternate slugs blindly; skip per the same caution
+#     as Djinni's primary_keyword trap.
+#   - VOLKA GAMES: excluded on relevance (pure Gamedev), not technical
+#     failure - board was never checked.
+
+# Maximum number of matching jobs collected from one configured company board per run.
+max_jobs_per_board: 10
+
+career_boards:
+  - company: "Coinbase"
+    ats: "greenhouse"
+    slug: "coinbase"
+  - company: "Wintermute"
+    ats: "lever"
+    slug: "wintermute-trading"
+  - company: "Binance"
+    ats: "lever"
+    slug: "binance"
+  - company: "Nansen"
+    ats: "greenhouse"
+    slug: "nansen"
+  - company: "OKX"
+    ats: "greenhouse"
+    slug: "okx"
+  - company: "Bybit"
+    ats: "greenhouse"
+    slug: "bybit"
+  - company: "Flow Traders"
+    ats: "greenhouse"
+    slug: "flowtraders"
+  - company: "FalconX"
+    ats: "greenhouse"
+    slug: "falconx"
+  - company: "GSR"
+    ats: "greenhouse"
+    slug: "gsrmarkets"
+  - company: "Kaiko"
+    ats: "lever"
+    slug: "kaiko"
+    host: "https://api.eu.lever.co"
+  # Cumberland is DRW's crypto-asset arm and shares DRW's single Greenhouse
+  # board (159 jobs total, most of them non-crypto DRW roles) — the existing
+  # title-vs-query check in this collector already filters those out, same
+  # as any other shared board.
+  - company: "Cumberland (DRW)"
+    ats: "greenhouse"
+    slug: "drweng"
+
+  # Added 2026-09-09, all verified with a live API call returning a non-empty
+  # job list (see the general_fintech_and_tech comment above for the source).
+  - company: "airSlate"
+    ats: "lever"
+    slug: "airslate"
+  - company: "AppFollow"
+    ats: "lever"
+    slug: "appfollow"
+  - company: "CoinsPaid"
+    ats: "lever"
+    slug: "coinspaid"
+    host: "https://api.eu.lever.co"
+  - company: "Collectly"
+    ats: "lever"
+    slug: "CollectlyInc"
+  - company: "MoonPay"
+    ats: "lever"
+    slug: "moonpay"
+  - company: "Outschool"
+    ats: "greenhouse"
+    slug: "outschool"
+  - company: "Stackadapt"
+    ats: "greenhouse"
+    slug: "stackadapt"
+  - company: "Truv"
+    ats: "lever"
+    slug: "truv"
+  - company: "Xometry"
+    ats: "greenhouse"
+    slug: "xometryeurope"
+  - company: "Zerion"
+    ats: "lever"
+    slug: "zerion"

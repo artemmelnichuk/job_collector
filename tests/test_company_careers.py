@@ -1,0 +1,168 @@
+from __future__ import annotations
+
+import unittest
+
+from collectors.company_careers import (
+    build_greenhouse_url,
+    build_lever_url,
+    configured_career_boards,
+    max_jobs_per_board,
+    parse_greenhouse_jobs,
+    parse_lever_jobs,
+    _greenhouse_record,
+    _lever_description,
+    _lever_record,
+    _lever_work_format,
+)
+
+
+class CompanyCareersTests(unittest.TestCase):
+    def test_builds_public_ats_urls(self) -> None:
+        self.assertEqual(
+            build_greenhouse_url("coinbase"),
+            "https://boards-api.greenhouse.io/v1/boards/coinbase/jobs?content=true",
+        )
+        self.assertEqual(
+            build_lever_url("wintermute"),
+            "https://api.lever.co/v0/postings/wintermute?mode=json",
+        )
+
+    def test_parsers_keep_only_mapping_jobs(self) -> None:
+        self.assertEqual(parse_greenhouse_jobs({"jobs": [{"title": "Risk Analyst"}, "bad"]}), [{"title": "Risk Analyst"}])
+        self.assertEqual(parse_lever_jobs([{"text": "Trading Analyst"}, "bad"]), [{"text": "Trading Analyst"}])
+
+    def test_configured_boards_validates_ats(self) -> None:
+        boards = configured_career_boards({"career_boards": [
+            {"company": "Coinbase", "ats": "greenhouse", "slug": "coinbase"},
+            {"company": "Unknown", "ats": "other", "slug": "x"},
+        ]})
+        self.assertEqual(len(boards), 1)
+        self.assertEqual(boards[0]["company"], "Coinbase")
+
+    def test_board_limit_has_safe_default(self) -> None:
+        self.assertEqual(max_jobs_per_board({}), 10)
+        self.assertEqual(max_jobs_per_board({"max_jobs_per_board": "3"}), 3)
+        self.assertEqual(max_jobs_per_board({"max_jobs_per_board": 0}), 1)
+
+    def test_lever_description_includes_lists_and_additional(self) -> None:
+        job = {
+            "descriptionPlain": "About Binance blah blah.",
+            "lists": [
+                {"text": "Responsibilities", "content": "Do the thing."},
+                {"text": "Requirements", "content": "3+ years experience."},
+                "not a dict",
+            ],
+            "additionalPlain": "We offer great benefits.",
+        }
+        description = _lever_description(job)
+        self.assertIn("About Binance blah blah.", description)
+        self.assertIn("Responsibilities\nDo the thing.", description)
+        self.assertIn("Requirements\n3+ years experience.", description)
+        self.assertIn("We offer great benefits.", description)
+
+    def test_lever_description_falls_back_to_description_only(self) -> None:
+        job = {"description": "Just a plain description, no lists."}
+        self.assertEqual(_lever_description(job), "Just a plain description, no lists.")
+
+    def test_lever_work_format_prefers_structured_workplace_type(self) -> None:
+        # Confirmed against a real board (Wintermute): Lever populates
+        # workplaceType on every posting even when the free-text description
+        # never states a format - text-mining alone left these "Unknown".
+        self.assertEqual(_lever_work_format({"workplaceType": "hybrid"}, ""), "Hybrid")
+        self.assertEqual(_lever_work_format({"workplaceType": "onsite"}, ""), "On-site")
+        self.assertEqual(_lever_work_format({"workplaceType": "remote"}, ""), "Remote")
+
+    def test_lever_work_format_falls_back_to_text_when_field_missing(self) -> None:
+        self.assertEqual(_lever_work_format({}, "This is a fully remote role."), "Remote")
+        self.assertEqual(_lever_work_format({"workplaceType": None}, "Office-based role."), "On-site")
+
+    def test_lever_record_uses_structured_country_field(self) -> None:
+        job = {
+            "text": "Trading Analyst",
+            "workplaceType": "hybrid",
+            "country": "GB",
+            "categories": {"location": "London", "commitment": "Full-time"},
+            "description": "Join our London team.",
+            "hostedUrl": "https://jobs.lever.co/wintermute/abc",
+        }
+        record = _lever_record(job, {"company": "Wintermute", "ats": "lever", "slug": "wintermute"}, {"query": "Trading Analyst", "category": "trading"})
+        self.assertEqual(record.work_format, "Hybrid")
+        self.assertEqual(record.country, "GB")
+
+    def test_lever_record_falls_back_when_structured_fields_absent(self) -> None:
+        job = {
+            "text": "Data Analyst",
+            "categories": {"location": "Paris, France", "commitment": "Full-time"},
+            "description": "This is a fully remote role.",
+            "hostedUrl": "https://jobs.lever.co/example/def",
+        }
+        record = _lever_record(job, {"company": "Example", "ats": "lever", "slug": "example"}, {"query": "Data Analyst", "category": "data"})
+        self.assertEqual(record.work_format, "Remote")
+        self.assertEqual(record.country, "France")
+
+    def test_greenhouse_record_maps_fields_from_a_real_shaped_payload(self) -> None:
+        # Shaped after a real Coinbase boards-api response (fetched 2026-09-08):
+        # Greenhouse has no structured work-format field, only a free-text
+        # `location.name` (see CLAUDE.md/PROJECT_HANDOFF_RU.md "Resolved" 2026-09-08).
+        job = {
+            "absolute_url": "https://www.coinbase.com/careers/positions/8053751?gh_jid=8053751",
+            "location": {"name": "Remote - Cyprus"},
+            "updated_at": "2026-08-28T10:51:50-04:00",
+            "title": "Accountant, Cyprus",
+            "content": "<p>Join our Finance team. Salary: $80 000 - $95 000 per year.</p>",
+            "metadata": [{"id": 166433, "name": "Team", "value": "Finance", "value_type": "single_select"}],
+        }
+        record = _greenhouse_record(
+            job,
+            {"company": "Coinbase", "ats": "greenhouse", "slug": "coinbase"},
+            {"query": "Accountant", "category": "finance"},
+        )
+        self.assertEqual(record.title, "Accountant, Cyprus")
+        self.assertEqual(record.company, "Coinbase")
+        self.assertEqual(record.city_region, "Remote - Cyprus")
+        self.assertEqual(record.country, "Cyprus")
+        self.assertEqual(record.work_format, "Remote")
+        self.assertEqual(record.url, "https://www.coinbase.com/careers/positions/8053751?gh_jid=8053751")
+        self.assertIn("Join our Finance team.", record.full_text)
+        self.assertEqual(record.salary, "$80 000 - $95 000 per year")
+        self.assertEqual(record.note, "ATS: Greenhouse; board: coinbase")
+        self.assertTrue(record.job_id)
+
+    def test_greenhouse_record_reads_hybrid_from_location_name_when_description_is_silent(self) -> None:
+        # Real-shaped: many Greenhouse boards mark hybrid roles only in
+        # location.name ("Hybrid - Bangalore, India"), never in prose.
+        job = {
+            "absolute_url": "https://boards.greenhouse.io/example/jobs/1",
+            "location": {"name": "Hybrid - Bangalore, India"},
+            "title": "Risk Analyst",
+            "content": "Join our growing risk team.",
+        }
+        record = _greenhouse_record(
+            job,
+            {"company": "Example", "ats": "greenhouse", "slug": "example"},
+            {"query": "Risk Analyst", "category": "risk"},
+        )
+        self.assertEqual(record.work_format, "Hybrid")
+        self.assertEqual(record.country, "India")
+
+    def test_greenhouse_record_leaves_work_format_unknown_for_a_bare_office_name(self) -> None:
+        # Documented gap (PROJECT_HANDOFF_RU.md 2026-09-08): a bare office
+        # location with no Remote/Hybrid qualifier is usually on-site in
+        # Greenhouse's convention, but this is not inferred - left "Unknown"
+        # unless the description itself states the format.
+        job = {
+            "absolute_url": "https://boards.greenhouse.io/example/jobs/2",
+            "location": {"name": "Chicago, IL"},
+            "title": "Data Analyst",
+            "content": "Join our data team in Chicago.",
+        }
+        record = _greenhouse_record(
+            job,
+            {"company": "Example", "ats": "greenhouse", "slug": "example"},
+            {"query": "Data Analyst", "category": "data"},
+        )
+        self.assertEqual(record.work_format, "Unknown")
+
+
+if __name__ == "__main__":
+    unittest.main()

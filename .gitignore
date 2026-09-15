@@ -1,0 +1,32 @@
+.venv/
+.browser_profile/
+.browser_profile_*/
+.playwright-browsers/
+.install_tmp/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+~$*.xlsx
+
+# Personal job-search material (resume drafts, cover letters, application
+# tracker) — kept local only, not part of the collector's version history.
+CV/
+
+# Per-run raw snapshots stay untracked (bulky, one file per collection run).
+data/raw/*
+!data/raw/.gitkeep
+
+# The accumulating processed dataset IS tracked, so every cleanup/tuning
+# pass is a reviewable, revertible commit instead of an in-place overwrite.
+data/processed/*
+!data/processed/.gitkeep
+!data/processed/crypto_jobs_clean_v1.xlsx
+!data/processed/crypto_jobs_clean_v1.csv
+
+logs/*
+!logs/.gitkeep
+.playwright-cli/
+
+# Personal/local Claude Code permission overrides; .claude/settings.json
+# (shared project config) is still tracked.
+.claude/settings.local.json
