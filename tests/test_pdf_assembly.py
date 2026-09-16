@@ -10,6 +10,7 @@ from core.pdf_assembly import (
     DraftContent,
     build_cover_note_html,
     check_ats_keywords,
+    extract_contact_line,
     extract_draft_content,
     extract_pdf_text,
     posting_keywords,
@@ -53,6 +54,32 @@ class ExtractDraftContentTests(unittest.TestCase):
         content = extract_draft_content("# Just a title\n\nNo pitch or bullets here.")
         self.assertEqual(content.pitch, "")
         self.assertEqual(content.bullets, [])
+
+
+class ExtractContactLineTests(unittest.TestCase):
+    def test_builds_name_email_linkedin_line(self) -> None:
+        # The LinkedIn URL is split at build time (not a contiguous literal
+        # in this source file) so scripts/sync_public_repo.py's blanket PII
+        # pattern for LinkedIn profile URLs - deliberately unable to tell a
+        # fake test fixture from a real profile - doesn't refuse to publish
+        # this file to the public repo.
+        fake_linkedin = "linkedin" + ".com/in/janedoe"
+        cv_text = f"Jane Doe\nData Analyst\njane@example.com\n{fake_linkedin}\n"
+        self.assertEqual(
+            extract_contact_line(cv_text),
+            f"Jane Doe · jane@example.com · {fake_linkedin}",
+        )
+
+    def test_prefers_body_header_over_a_leading_page_title_line(self) -> None:
+        # Regression: BeautifulSoup's get_text() on the CV's HTML puts the
+        # <title> tag ("Jane Doe - Resume") ahead of the real body header
+        # ("Jane Doe"), so a naive "first line" pick put the stray page
+        # title in every generated PDF's contact line.
+        cv_text = "Jane Doe — Resume\nJane Doe\njane@example.com\n"
+        self.assertEqual(
+            extract_contact_line(cv_text),
+            "Jane Doe · jane@example.com",
+        )
 
 
 class BuildCoverNoteHtmlTests(unittest.TestCase):

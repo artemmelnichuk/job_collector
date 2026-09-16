@@ -39,7 +39,14 @@ def extract_contact_line(cv_text: str) -> str:
     contact details out of source code entirely (`CV/` is gitignored, this
     module isn't).
     """
-    name = cv_text.strip().splitlines()[0].strip() if cv_text.strip() else ""
+    lines = [line.strip() for line in cv_text.strip().splitlines() if line.strip()]
+    name = lines[0] if lines else ""
+    # BeautifulSoup's get_text() includes the <title> tag ("Name — Resume"),
+    # which lands as the very first line ahead of the real body header
+    # ("Name") - prefer the body header when the title line is just that
+    # name with extra suffix text tacked on.
+    if len(lines) > 1 and name != lines[1] and name.casefold().startswith(lines[1].casefold()):
+        name = lines[1]
     email_match = _EMAIL_RE.search(cv_text)
     linkedin_match = _LINKEDIN_RE.search(cv_text)
     parts = [part for part in (name, email_match.group(0) if email_match else "",
