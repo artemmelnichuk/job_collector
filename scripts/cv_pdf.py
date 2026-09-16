@@ -19,9 +19,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from core.fit_score import load_master_cv_text
 from core.pdf_assembly import (
     build_cover_note_html,
     check_ats_keywords,
+    extract_contact_line,
     extract_draft_content,
     extract_pdf_text,
     posting_keywords,
@@ -31,6 +33,7 @@ from core.pdf_assembly import (
 from core.storage import load_records
 
 DATA_PATH = PROJECT_ROOT / "data" / "processed" / "crypto_jobs_clean_v1.xlsx"
+DEFAULT_CV_PATH = PROJECT_ROOT / "CV" / "resume_improved.html"
 DEFAULT_DRAFTS_DIR = PROJECT_ROOT / "CV" / "drafts"
 
 ATS_SECTION_MARKER = "## ATS-проверка текстового слоя"
@@ -62,19 +65,20 @@ def select_draft_files(drafts_dir: Path, regenerate: bool) -> list[Path]:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit", type=int, default=20, help="Max drafts to process this run")
+    parser.add_argument("--cv", type=Path, default=DEFAULT_CV_PATH, help="Path to the master CV (HTML)")
     parser.add_argument("--dir", type=Path, default=DEFAULT_DRAFTS_DIR, help="Directory of draft .md files")
     parser.add_argument("--regenerate", action="store_true", help="Reprocess drafts that already have a PDF+ATS check")
     return parser.parse_args(argv)
 
 
-async def process_one(path: Path, record) -> tuple[bool, str]:
+async def process_one(path: Path, record, contact_line: str) -> tuple[bool, str]:
     draft_markdown = path.read_text(encoding="utf-8")
     content = extract_draft_content(draft_markdown)
     if not content.pitch and not content.bullets:
         return False, "could not find a pitch/bullets section to assemble"
 
     pdf_path = path.with_suffix(".pdf")
-    html = build_cover_note_html(record, content)
+    html = build_cover_note_html(record, content, contact_line)
     await render_pdf(html, pdf_path)
 
     pdf_text = extract_pdf_text(pdf_path)
@@ -86,6 +90,7 @@ async def process_one(path: Path, record) -> tuple[bool, str]:
 
 
 async def run(args: argparse.Namespace) -> int:
+    contact_line = extract_contact_line(load_master_cv_text(args.cv)) if args.cv.exists() else ""
     records_by_id = {record.job_id: record for record in load_records(DATA_PATH)}
     targets = select_draft_files(args.dir, args.regenerate)[: args.limit]
 
@@ -102,7 +107,7 @@ async def run(args: argparse.Namespace) -> int:
             print(f"  ERROR {job_id}: no matching record in the dataset (posting removed?)")
             continue
         try:
-            ok, detail = await process_one(path, record)
+            ok, detail = await process_one(path, record, contact_line)
         except Exception as error:  # noqa: BLE001 - report and keep going, one bad file shouldn't kill the batch
             errors += 1
             print(f"  ERROR {job_id} ({record.title}): {error}")
