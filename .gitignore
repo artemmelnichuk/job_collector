@@ -25,6 +25,9 @@ data/processed/*
 
 logs/*
 !logs/.gitkeep
+
+# Generated market-demand reports (derived from the real dataset, regenerable).
+reports/
 .playwright-cli/
 
 # Personal/local Claude Code permission overrides; .claude/settings.json
