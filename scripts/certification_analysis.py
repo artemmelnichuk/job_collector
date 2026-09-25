@@ -22,6 +22,10 @@ from pathlib import Path
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from core.skill_recommendations import normalize_key  # noqa: E402
 DATA_PATH = PROJECT_ROOT / "data" / "processed" / "crypto_jobs_clean_v1.xlsx"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 MIN_POSTINGS = 50
@@ -97,13 +101,6 @@ EUROPE = {
     "czechia", "czech republic", "romania", "bulgaria", "cyprus", "greece", "hungary", "estonia", "latvia",
     "lithuania", "serbia", "croatia", "slovakia", "slovenia", "malta", "luxembourg", "europe",
 }
-
-
-def normalize_key(company: object, title: object) -> str:
-    def clean(value: object) -> str:
-        return re.sub(r"\s+", " ", str(value if value == value else "").strip().lower())
-
-    return f"{clean(company)}|{clean(title)}"
 
 
 def level_bucket(seniority: object) -> str:

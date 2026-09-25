@@ -11,8 +11,16 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import openpyxl
 from openpyxl.chart import BarChart, Reference
-from openpyxl.styles import PatternFill
+from openpyxl.styles import Font, PatternFill
 
+from core.skill_recommendations import (
+    build_recommendations,
+    count_certification_mentions,
+    count_market_demand,
+    dedupe_rows,
+    format_recommendation,
+    posting_text,
+)
 from core.skills_gap import build_rejection_report, build_skill_gap_report
 
 # A skill mentioned in only one near-fit posting could just be that one
@@ -111,6 +119,30 @@ def _write_report_sheet(workbook, skill_report, rejection_report) -> None:
         sheet.add_chart(rejection_chart, "G20")
 
 
+def _write_recommendations_sheet(workbook, recommendations, market_total: int) -> None:
+    if "skill_recommendations" in workbook.sheetnames:
+        del workbook["skill_recommendations"]
+    sheet = workbook.create_sheet("skill_recommendations")
+    sheet.append([
+        "skill", "status", "near-fit postings", f"market postings (of {market_total})", "market share %",
+        "certificate postings", "action", "certificate advice", "note",
+    ])
+    for cell in sheet[1]:
+        cell.font = Font(bold=True)
+    for rec in recommendations:
+        sheet.append([
+            rec.skill, rec.status, rec.near_fit_postings, rec.market_postings, round(rec.market_share * 100, 1),
+            rec.cert_postings, rec.action, rec.certificate_advice, rec.note,
+        ])
+        if rec.action == "learn":
+            for cell in sheet[sheet.max_row]:
+                cell.fill = WORTH_LEARNING_FILL
+    for column_cells in sheet.columns:
+        width = min(max((len(str(cell.value or "")) for cell in column_cells), default=10) + 2, 60)
+        sheet.column_dimensions[column_cells[0].column_letter].width = width
+    sheet.freeze_panes = "A2"
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -161,9 +193,26 @@ def main() -> int:
         for example in rejection_report.examples.get(bucket, []):
             print(f"           - {example}")
 
+    # Market side: every collected posting (not only near-fit ones), one per
+    # normalized company + title, so a skill's share reflects the whole market
+    # sample rather than the postings already hand-picked as plausible.
+    market_rows = dedupe_rows(master_by_id.values())
+    market_texts = [posting_text(row) for row in market_rows]
+    studied = set(skill_report.gap) | set(skill_report.partial)
+    recommendations = build_recommendations(
+        skill_report,
+        count_market_demand(market_texts, studied),
+        count_certification_mentions(market_texts, studied),
+        len(market_rows),
+    )
+    print(f"\n=== What to study (market demand across {len(market_rows)} unique postings) ===")
+    for rec in recommendations:
+        print("  " + format_recommendation(rec))
+
     _write_report_sheet(workbook, skill_report, rejection_report)
+    _write_recommendations_sheet(workbook, recommendations, len(market_rows))
     workbook.save(path)
-    print(f"\nSaved 'skills_gap' sheet in {path}")
+    print(f"\nSaved 'skills_gap' and 'skill_recommendations' sheets in {path}")
 
     return 0
 
